@@ -217,7 +217,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     }
     return 1;
   }
-  // 있으면 양수값 반환 = dynamic content
+  // 있으면 양수값 반환 = 동적 dynamic content
   else
   {
     // index 함수는 문자열에서 특정 문자의 위치 반환
