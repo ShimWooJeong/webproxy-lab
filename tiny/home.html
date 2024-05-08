@@ -1,7 +1,19 @@
+<!DOCTYPE html>
 <html>
-<head><title>test</title></head>
-<body> 
-<img align="middle" src="godzilla.gif">
-Dave O'Hallaron
-</body>
+    <head>
+        <title>Test</title>
+        <script>
+            function add() {
+                let arg1 = document.getElementById('first').value;
+                let arg2 = document.getElementById('second').value;
+                document.location.href = `./cgi-bin/adder?${arg1}&${arg2}`;
+            }
+        </script>
+    </head>
+    <body>
+        <video src="video.mp4" controls loop autoplay width="550"></video>
+        <input type="text" id="first" size="10" />
+        <input type="text" id="second" size="10" />
+        <button onclick="add()">adder</button>
+    </body>
 </html>

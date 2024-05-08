@@ -65,8 +65,12 @@ void doit(int fd)
   char filename[MAXLINE], cgiargs[MAXLINE];
   rio_t rio; // rio_t 타입의 읽기 버퍼 선언
 
-  Rio_readinitb(&rio, fd);           // fd(connfd)로 rio_t 구조체 초기화
-  Rio_readlineb(&rio, buf, MAXLINE); // 요청 라인 읽어들이고, buf에 저장
+  // 무한루프 수정: 요청을 받아오지 못했다면 바로 return하여 doit을 종료
+  Rio_readinitb(&rio, fd);                  // fd(connfd)로 rio_t 구조체 초기화
+  if (!(Rio_readlineb(&rio, buf, MAXLINE))) // 요청 라인 읽어들이고, buf에 저장
+  {
+    return;
+  }
 
   /*
   rio_readlineb(): 텍스트 줄을 파일 rio에서부터 읽어와 메모리 위치 buf로 복사 -> 읽은 텍스트 라인을 null문자로 바꾸고 종료
@@ -79,19 +83,19 @@ void doit(int fd)
   printf("%s", buf);
   // sscanf?: buf에서 데이터를 "%s %s %s" 형식에 따라 읽어와 각각 method, uri, version에 저장
   sscanf(buf, "%s %s %s", method, uri, version);
-
   // Tiny는 GET 메소드만 지원하기에 클라이언트가 다른 메소드(POST 등)을 요청하면 error 메세지를 보내고 main으로 돌아옴
   // strcasecmp(): 대소문자 무시하는 문자열 비교 함수
-  if (!(strcasecmp(method, "GET") == 0 || strcasecmp(method, "HEAD") == 0))
+  if (strcasecmp(method, "GET"))
   {
     // GET 메소드가 아니라면, tiny에서 지원하지 않는 메소드이므로 error 출력 후 return
     clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
     return;
   }
 
-  // GET 메소드라면 읽어들임
+  printf("-----------------------\n");
+  // 요청 헤더 읽기
   read_requesthdrs(&rio);
-
+  printf("-----------------------\n");
   // uri로부터 filename과 cgiargs에 값을 넣는 parse_uri 실행
   // 실행 후 정적/동적 여부에 따라 return 받은 1 or 0을 is_static에 대입
   // 즉 is_static = 정적/동적 컨텐츠를 위한 것인지 나타내는 플래그
@@ -174,6 +178,7 @@ void read_requesthdrs(rio_t *rp)
   char buf[MAXLINE];
 
   Rio_readlineb(rp, buf, MAXLINE);
+  printf("%s", buf); // 이거 없으면 host 정보 빠짐
   /*
   strcmp(): 두 문자열 비교 함수
   헤더의 마지막 줄은 비어있기에 \r\n만 buf에 담겨있다면? = while문 탈출
@@ -210,10 +215,10 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     strcat(filename, uri); // 문자열을 붙임 strcat(최종 문자열, 붙일 문자열)
     // 결과) cgiargs = "", filename="./~~" or "./home.html"
 
-    // 만약 uri가 '/' a문자로 끝난다면 기본 파일 이름(home.html)을 추가
+    // 만약 uri가 '/' 문자로 끝난다면 기본 파일 이름(home.html)을 추가
     if (uri[strlen(uri) - 1] == '/')
     {
-      strcat(filename, "home.html");
+      strcat(filename, "home.html"); // home.html
     }
     return 1;
   }
@@ -269,7 +274,7 @@ void serve_static(int fd, char *filename, int filesize)
   srcfd = Open(filename, O_RDONLY, 0);
 
   // mmap()로 바로 메모리 할당, srcfd의 파일 값 배정
-  // mmape(): malloc과 유사 + 값 복사해줌
+  // mmap(): malloc과 유사 + 값 복사해줌
   srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
   // 생성한 파일 식별자 번호인 srcfd 닫음
   Close(srcfd);
